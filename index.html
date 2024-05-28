@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colorful Poster Generator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            color: #ffffff;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #posterForm {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90%;
+            max-width: 500px;
+            margin-bottom: 20px;
+        }
+        label, input, button {
+            display: block;
+            margin: 10px auto;
+            width: 100%;
+            max-width: 300px;
+        }
+        button {
+            background-color: #ff7e5f;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #ffffff;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #canvas {
+            border: 5px solid #ffffff;
+            margin-top: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+        }
+        #downloadBtn {
+            margin-top: 20px;
+            display: none;
+            background-color: #feb47b;
+        }
+        #cropContainer {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        #cropImage {
+            max-width: 100%;
+            max-height: 400px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 600px) {
+            #canvas {
+                width: 100%;
+                height: auto;
+            }
+            #posterForm {
+                width: 100%;
+                padding: 10px;
+            }
+            label, input, button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Create Your Colorful Poster</h1>
+    <form id="posterForm">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+        <label for="image">Upload Image:</label>
+        <input type="file" id="image" name="image" accept="image/*" required>
+        <button type="button" id="generateButton">Generate Poster</button>
+    </form>
+    <div id="cropContainer">
+        <img id="cropImage" src="">
+        <button id="cropButton">Crop Image</button>
+    </div>
+    <canvas id="canvas" width="600" height="800"></canvas>
+    <button id="downloadBtn">Download Poster</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <script>
+        (function() {
+            const form = document.getElementById('posterForm');
+            const imageInput = document.getElementById('image');
+            const cropContainer = document.getElementById('cropContainer');
+            const cropImage = document.getElementById('cropImage');
+            const cropButton = document.getElementById('cropButton');
+            const generateButton = document.getElementById('generateButton');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const defaultImageSrc = 'default-poster-background.jpg'; // Path to your default background image
+            let cropper;
+            let croppedImageDataURL;
+
+            // Function to draw the default poster
+            function drawDefaultPoster() {
+                const defaultImg = new Image();
+                defaultImg.onload = function () {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(defaultImg, 0, 0, canvas.width, canvas.height);
+                };
+                defaultImg.src = defaultImageSrc;
+            }
+
+            // Load the default poster on page load
+            window.onload = function() {
+                drawDefaultPoster();
+            };
+
+            // Add event listener for image input
+            imageInput.addEventListener('change', function () {
+                const file = imageInput.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        cropImage.src = event.target.result;
+                        cropContainer.style.display = 'block';
+                        if (cropper) {
+                            cropper.destroy();
+                        }
+                        cropper = new Cropper(cropImage, {
+                            aspectRatio: 1,
+                            viewMode: 1,
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Add event listener for crop button
+            cropButton.addEventListener('click', function () {
+                const croppedCanvas = cropper.getCroppedCanvas();
+                croppedImageDataURL = croppedCanvas.toDataURL();
+                cropContainer.style.display = 'none';
+            });
+
+            // Add event listener for generate button
+            generateButton.addEventListener('click', function () {
+                if (croppedImageDataURL) {
+                    const croppedImage = new Image();
+                    croppedImage.onload = function () {
+                        const name = document.getElementById('name').value;
+                        // Draw the default poster first
+                        const defaultImg = new Image();
+                        defaultImg.onload = function () {
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(defaultImg, 0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(croppedImage, 100, 150, 400, 400); // Adjust the size and position as needed
+                            ctx.font = '48px sans-serif';
+                            ctx.fillStyle = '#ff7e5f';
+                            ctx.fillText(name, 50, canvas.height - 50);
+                            downloadBtn.style.display = 'block';
+                        };
+                        defaultImg.src = defaultImageSrc;
+                    };
+                    croppedImage.src = croppedImageDataURL;
+                } else {
+                    alert('Please crop the image first.');
+                }
+            });
+
+            // Add event listener for download button
+            downloadBtn.addEventListener('click', function () {
+                const link = document.createElement('a');
+                link.download = 'poster.png';
+                link.href = canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
+                link.click();
+            });
+        })();
+    </script>
+</body>
+</html>
