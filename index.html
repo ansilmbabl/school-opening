@@ -88,8 +88,8 @@
         }
         #closeModal {
             position: absolute;
-            top: 10px; /* Position at the top */
-            right: 10px; /* Position at the right */
+            top: 10px;
+            right: 10px;
             background-color: red;
             color: white;
             border: none;
@@ -102,7 +102,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1001; /* Ensure the button is above the image */
+            z-index: 1001;
         }
         @media (max-width: 600px) {
             #canvas {
@@ -138,7 +138,7 @@
             <button id="cropButton">Crop Image</button>
         </div>
     </div>
-    <canvas id="canvas" width="600" height="800"></canvas>
+    <canvas id="canvas" width="1865" height="3264"></canvas>
     <button id="downloadBtn">Download Poster</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
@@ -155,7 +155,7 @@
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
             const downloadBtn = document.getElementById('downloadBtn');
-            const defaultImageSrc = 'default-poster-background.jpg'; // Path to your default background image
+            const defaultImageSrc = 'default-poster-background.png'; // Path to your default background image
             let cropper;
             let croppedImageDataURL;
 
@@ -219,6 +219,21 @@
                 hideModal();
             });
 
+            // Function to fit text in the rectangle
+            function fitTextToRectangle(ctx, text, maxWidth, maxHeight) {
+                let fontSize = 48;
+                ctx.font = `bold ${fontSize}px sans-serif`;
+                let textWidth = ctx.measureText(text).width;
+                let textHeight = fontSize;
+                while ((textWidth > maxWidth || textHeight > maxHeight) && fontSize > 1) {
+                    fontSize -= 1;
+                    ctx.font = `bold ${fontSize}px sans-serif`;
+                    textWidth = ctx.measureText(text).width;
+                    textHeight = fontSize;
+                }
+                return fontSize;
+            }
+
             // Add event listener for generate button
             generateButton.addEventListener('click', function () {
                 if (croppedImageDataURL) {
@@ -229,11 +244,23 @@
                         const defaultImg = new Image();
                         defaultImg.onload = function () {
                             ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(croppedImage, 396, 1749, 750, 750); // Use actual size of cropped image
                             ctx.drawImage(defaultImg, 0, 0, canvas.width, canvas.height);
-                            ctx.drawImage(croppedImage, 100, 150, 400, 400); // Adjust the size and position as needed
-                            ctx.font = '48px sans-serif';
-                            ctx.fillStyle = '#ff7e5f';
-                            ctx.fillText(name, 50, canvas.height - 50);
+
+                            const rectX = 385;
+                            const rectY = 2580;
+                            const rectWidth = 765;
+                            const rectHeight = 115;
+                            const fontSize = fitTextToRectangle(ctx, name, rectWidth, rectHeight);
+                            ctx.font = `bold ${fontSize}px sans-serif`;
+                            ctx.fillStyle = '#000000';
+                            ctx.strokeStyle = '#ffffff';
+                            ctx.lineWidth = 10;
+                            const textWidth = ctx.measureText(name).width;
+                            const textX = rectX + (rectWidth - textWidth) / 2;
+                            const textY = rectY + (rectHeight + fontSize) / 2 - 10; // Adjust the Y position to fit within the rectangle
+                            ctx.strokeText(name, textX, textY);
+                            ctx.fillText(name, textX, textY);
                             downloadBtn.style.display = 'block';
                         };
                         defaultImg.src = defaultImageSrc;
